@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "name": "InputBlob",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "unprocessed-pdf/{name}",
+      "connection": "PDFProcessorSTORAGE",
+      "source": "EventGrid"
+    }
+  ]
+}
