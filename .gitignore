@@ -1,0 +1,46 @@
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# Dependency directories
+# For PowerShell, there are no typical dependency directories like node_modules
+
+# Azurite
+__azurite*
+AzuriteConfig
+__blobstorage__
+__queuestorage__
+__tablestorage__
+
+# VS Code
+.vscode/
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Azure Functions
+bin
+obj
+appsettings.json
+local.settings.json
+
+# Temporary files
+*.tmp
+*.temp
+
+# Azure Developer CLI
+.azure

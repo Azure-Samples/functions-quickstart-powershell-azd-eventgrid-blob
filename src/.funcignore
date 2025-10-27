@@ -1,0 +1,7 @@
+*.ps1xml
+.git*
+.vscode
+local.settings.json
+test
+.funcignore
+*.md
