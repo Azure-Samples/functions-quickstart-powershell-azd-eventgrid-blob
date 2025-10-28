@@ -32,6 +32,9 @@ var baseAppSettings = {
   AzureWebJobsStorage__credential: 'managedidentity'
   AzureWebJobsStorage__clientId: identityClientId
   
+  // Azure client ID for PowerShell managed identity authentication
+  AZURE_CLIENT_ID: identityClientId
+  
   // Application Insights settings are always included
   APPLICATIONINSIGHTS_AUTHENTICATION_STRING: applicationInsightsIdentity
   APPLICATIONINSIGHTS_CONNECTION_STRING: applicationInsights.properties.ConnectionString

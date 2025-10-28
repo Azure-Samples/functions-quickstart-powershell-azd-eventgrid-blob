@@ -3,23 +3,44 @@ using namespace System.Net
 # Input bindings are passed in via param block.
 param($InputBlob, $TriggerMetadata)
 
-# Write an information log with the current time.
-Write-Host "PowerShell Blob Trigger (using Event Grid) processed blob"
-
-$blobName = $TriggerMetadata.Name
-$fileSize = $InputBlob.Length
-
-Write-Host "Name: $blobName"
-Write-Host "Size: $fileSize bytes"
-
-try {
-    # Copy to processed container - simple demonstration of an async operation
-    Copy-ToProcessedContainer -BlobData $InputBlob -BlobName "processed_$blobName"
-    
-    Write-Host "PDF processing complete for $blobName"
-} catch {
-    Write-Error "Error processing blob $blobName : $_"
-    throw
+# Define functions first
+function Get-StorageContext {
+    try {
+        # Get storage account context using environment variables
+        $storageAccountName = $env:PDFProcessorSTORAGE__accountName
+        $connectionString = $env:PDFProcessorSTORAGE
+        
+        # Check if running locally with Azurite
+        if ($connectionString -eq "UseDevelopmentStorage=true") {
+            # For local development with Azurite
+            Write-Host "Using Azurite for local development"
+            return New-AzStorageContext -ConnectionString $connectionString
+        } elseif ($storageAccountName) {
+            # For Azure with managed identity - use OAuth authentication
+            Write-Host "Using managed identity for storage access with account: $storageAccountName"
+            
+            # Get the client ID for the user-assigned managed identity
+            $clientId = $env:AZURE_CLIENT_ID
+            if ($clientId) {
+                Write-Host "Using user-assigned managed identity with client ID: $clientId"
+                # Connect using specific managed identity
+                $null = Connect-AzAccount -Identity -AccountId $clientId -ErrorAction Stop
+            } else {
+                Write-Host "Using system-assigned managed identity"
+                # Connect using managed identity
+                $null = Connect-AzAccount -Identity -ErrorAction Stop
+            }
+            
+            # Create storage context using OAuth (managed identity)
+            $ctx = New-AzStorageContext -StorageAccountName $storageAccountName -UseConnectedAccount
+            return $ctx
+        } else {
+            throw "No valid storage configuration found. Check PDFProcessorSTORAGE settings."
+        }
+    } catch {
+        Write-Error "Failed to create storage context: $_"
+        throw
+    }
 }
 
 function Copy-ToProcessedContainer {
@@ -31,29 +52,14 @@ function Copy-ToProcessedContainer {
     Write-Host "Starting copy operation for $BlobName"
     
     try {
-        # Get storage account context using environment variables
-        $storageAccountName = $env:PDFProcessorSTORAGE__accountName
-        $connectionString = $env:PDFProcessorSTORAGE
-        
-        # Check if running locally with Azurite
-        if ($connectionString -eq "UseDevelopmentStorage=true") {
-            # For local development with Azurite
-            Write-Host "Using Azurite for local development"
-            $context = New-AzStorageContext -ConnectionString $connectionString
-        } elseif ($storageAccountName) {
-            # For Azure with managed identity
-            Write-Host "Using managed identity for storage access with account: $storageAccountName"
-            $context = New-AzStorageContext -StorageAccountName $storageAccountName -UseConnectedAccount
-        } else {
-            throw "No valid storage configuration found. Check PDFProcessorSTORAGE settings."
-        }
+        $context = Get-StorageContext
         
         # Convert byte array to temporary file for upload
         $tempFile = [System.IO.Path]::GetTempFileName()
         try {
             [System.IO.File]::WriteAllBytes($tempFile, $BlobData)
             
-            # Upload blob to processed-pdf container
+            # Upload blob to processed-pdf container using streams
             $result = Set-AzStorageBlobContent -Context $context `
                 -Container "processed-pdf" `
                 -Blob $BlobName `
@@ -74,4 +80,37 @@ function Copy-ToProcessedContainer {
         Write-Error "Failed to copy $BlobName to processed container: $_"
         throw
     }
+}
+
+# Get blob properties
+$blobName = $TriggerMetadata.Name
+$fileSize = $InputBlob.Length
+
+# Write information log with current time and blob details
+Write-Host "PowerShell Blob Trigger (using Event Grid) processed blob"
+Write-Host "Name: $blobName"
+Write-Host "Size: $fileSize bytes"
+
+# Copy the blob to the processed container with a new name
+$newBlobName = "processed-$blobName"
+
+try {
+    # Check if blob already exists in processed container to avoid duplicate processing
+    $context = Get-StorageContext
+    $existingBlob = Get-AzStorageBlob -Context $context -Container "processed-pdf" -Blob $newBlobName -ErrorAction SilentlyContinue
+    
+    if ($existingBlob) {
+        Write-Host "Blob $newBlobName already exists in the processed container. Skipping upload."
+        return
+    }
+
+    # Here you can add any processing logic for the input blob before uploading it to the processed container.
+    
+    # Copy blob to processed container using streams
+    Copy-ToProcessedContainer -BlobData $InputBlob -BlobName $newBlobName
+    
+    Write-Host "PDF processing complete for $blobName. Blob copied to processed container with new name $newBlobName."
+} catch {
+    Write-Error "Error processing blob $blobName : $_"
+    throw
 }

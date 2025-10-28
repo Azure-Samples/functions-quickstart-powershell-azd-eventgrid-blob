@@ -15,8 +15,3 @@ hooks:
         run: ./scripts/post-up.sh
         interactive: true
         continueOnError: false
-services:
-  processor:
-    project: ./src
-    language: powershell
-    host: function

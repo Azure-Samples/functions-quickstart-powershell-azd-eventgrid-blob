@@ -12,9 +12,6 @@ pids
 coverage
 *.lcov
 
-# Dependency directories
-# For PowerShell, there are no typical dependency directories like node_modules
-
 # Azurite
 __azurite*
 AzuriteConfig
@@ -44,3 +41,8 @@ local.settings.json
 
 # Azure Developer CLI
 .azure
+
+# Powershell Modules folder
+modules
+.azurite-data/.DS_Store
+.DS_Store

@@ -5,3 +5,4 @@ local.settings.json
 test
 .funcignore
 *.md
+install-modules.ps1

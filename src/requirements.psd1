@@ -1,8 +1,8 @@
 # This file enables modules to be automatically managed by the Functions service.
 # See https://aka.ms/functionsmanageddependency for additional information.
 #
+# Managed Dependencies is not supported on Flex Consumption plans.
+# Dependencies should be included with the function app content instead.
 @{
-    # For latest supported version, go to 'https://www.powershellgallery.com/packages/Az'. 
-    'Az.Storage' = '6.*'
-    'Az.Accounts' = '3.*'
+    # No module dependencies - using REST API calls instead
 }
